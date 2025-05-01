@@ -1,0 +1,61 @@
+# Build stage to build Wine from source
+FROM quay.io/archlinux/archlinux:latest AS builder
+
+# Prepare pacman
+RUN pacman-key --init && \
+    pacman-key --populate archlinux
+
+# Install build dependencies
+RUN pacman -Syu --noconfirm --quiet && \
+    pacman -S --noconfirm --quiet \
+        base-devel \
+        clang \
+        mingw-w64-gcc \
+        libunwind \
+        libxkbcommon && \
+    pacman -Scc --noconfirm --quiet
+
+WORKDIR /build
+
+# Prepare Wine source
+RUN curl -L https://dl.winehq.org/wine/source/10.x/wine-10.6.tar.xz | tar -xJf - && \
+    mkdir pkgdir
+
+ARG CFLAGS="-Os -pipe -g" \
+    CXXFLAGS="-Os -pipe -g" \
+    LDFLAGS="-Wl,-O1"
+
+# Build Wine
+WORKDIR /build/wine-10.6
+RUN ./configure \
+    --enable-archs=i386,x86_64 \
+    --disable-tests \
+    --disable-win16 \
+    --disable-winedbg \
+    --without-freetype \
+    --without-gettext \
+    --without-x \
+    --prefix=/usr && \
+    make -j$(nproc)
+
+# Package Wine
+#RUN make \
+#    prefix=/build/pkgdir/usr \
+#    libdir=/build/pkgdir/usr/lib \
+#    dlldir=/build/pkgdir/usr/lib/wine install
+RUN make DESTDIR=/build/pkgdir/ install
+
+# Strip unneeded symbols
+RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --strip-unneeded {} \;
+# Remove unnecessary files
+#RUN rm -r /build/pkgdir/usr/share/wine \
+#           /build/pkgdir/usr/bin/regedit /build/pkgdir/usr/bin/winefile \
+#           /build/pkgdir/usr/lib/wine/*-windows/*d3d* \
+#           /build/pkgdir/usr/lib/wine/*-windows/*gdi* \
+#           /build/pkgdir/usr/lib/wine/*-windows/*opengl* \
+#           /build/pkgdir/usr/lib/wine/*-windows/*audio* \
+#           /build/pkgdir/usr/lib/wine/*-windows/*msstyles \
+#           /build/wine*
+
+CMD ["bash"]
+
