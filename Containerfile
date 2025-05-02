@@ -7,31 +7,41 @@ RUN echo 'Acquire::http::Proxy "http://host.docker.internal:3142";' > /etc/apt/a
 RUN apt-get update && apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends --quiet \
         bison \
+        build-essential \
         ca-certificates \
         curl \
         dh-autoreconf \
         flex \
-        g++ \
         gcc-mingw-w64 \
         libgnutls28-dev \
-        libgnutlsxx30 \
         libpcap-dev \
         libudev-dev \
         libunwind-dev \
+        libx11-dev \
+        libfreetype-dev \
+        libxcomposite-dev \
+        libxcursor-dev \
+        libxfixes-dev \
+        libxi-dev \
+        libxrandr-dev \
+        libxrender-dev \
+        libxext-dev \
         libxkbcommon-dev \
         libxkbregistry-dev \
         make && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
 # Prepare Wine source
-RUN curl -L https://dl.winehq.org/wine/source/10.x/wine-10.6.tar.xz | tar -xJf - && \
-    mkdir pkgdir
+#RUN curl -L https://dl.winehq.org/wine/source/10.x/wine-10.6.tar.xz | tar -xJf - && \
+ADD wine-10.6.tar.xz /build/
+RUN mkdir pkgdir
 
-ARG CFLAGS="-Os -pipe -g" \
-    CXXFLAGS="-Os -pipe -g" \
-    LDFLAGS="-Wl,-O1"
+ARG CFLAGS="-Os -pipe -g"
+ARG CXXFLAGS="-Os -pipe -g"
+ARG LDFLAGS="-Wl,-O1"
 
 # Build Wine
 WORKDIR /build/wine-10.6
@@ -41,16 +51,10 @@ RUN autoreconf && \
     --disable-tests \
     --disable-win16 \
     --disable-winedbg \
-    --without-freetype \
-    --without-x \
     --prefix=/usr
 RUN make -j$(nproc)
 
 # Package Wine
-#RUN make \
-#    prefix=/build/pkgdir/usr \
-#    libdir=/build/pkgdir/usr/lib \
-#    dlldir=/build/pkgdir/usr/lib/wine install
 RUN make DESTDIR=/build/pkgdir/ install
 
 # Strip unneeded symbols
@@ -70,7 +74,11 @@ FROM quay.io/lib/debian:trixie-slim
 RUN echo 'Acquire::http::Proxy "http://host.docker.internal:3142";' > /etc/apt/apt.conf.d/00aptproxy
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bash \
-    libxext6 && \
+    libunwind8 \
+    libxext6 \
+    xauth \
+    xvfb && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy executable binaries
