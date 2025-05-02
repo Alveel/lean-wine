@@ -18,16 +18,12 @@ RUN apt-get update && apt-get upgrade --yes && \
         libudev-dev \
         libunwind-dev \
         libx11-dev \
-        libfreetype-dev \
         libxcomposite-dev \
-        libxcursor-dev \
-        libxfixes-dev \
         libxi-dev \
-        libxrandr-dev \
         libxrender-dev \
         libxext-dev \
         libxkbcommon-dev \
-        libxkbregistry-dev \
+        libxrandr-dev \
         make && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -51,7 +47,11 @@ RUN autoreconf && \
     --disable-tests \
     --disable-win16 \
     --disable-winedbg \
+    --without-freetype \
     --prefix=/usr
+
+CMD ["bash"]
+
 RUN make -j$(nproc)
 
 # Package Wine
@@ -89,6 +89,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 
 # Copy DLLs
 COPY --from=builder /build/pkgdir/usr /usr/
-
-CMD ["bash"]
-
+#
+#CMD ["bash"]
+#
