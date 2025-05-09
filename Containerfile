@@ -1,9 +1,19 @@
 # Build stage to build Wine from source
-FROM quay.io/lib/debian:trixie AS builder
+FROM quay.io/lib/debian:trixie-slim AS builder
 
-# Setup temporary package proxy
-RUN echo 'Acquire::http::Proxy "http://host.docker.internal:3142";' > /etc/apt/apt.conf.d/00aptproxy
-# Install build dependencies
+# Wine version & SHA256 checksum
+ARG WINE_VERSION="10.6"
+ARG WINE_CHECKSUM="2af8809a3e987363752c8f7640efa72a7c9d3213d332437db87ce1d0d98e9061"
+# Build flags
+ARG CFLAGS="-Os -pipe -g"
+ARG CXXFLAGS="-Os -pipe -g"
+ARG LDFLAGS="-Wl,-O1"
+
+# Download Wine source
+ADD --checksum=sha256:$WINE_CHECKSUM \
+    https://dl.winehq.org/wine/source/10.x/wine-$WINE_VERSION.tar.xz /build/
+
+# Update system & install build dependencies
 RUN apt-get update && apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends --quiet \
         bison \
@@ -15,80 +25,53 @@ RUN apt-get update && apt-get upgrade --yes && \
         gcc-mingw-w64 \
         libgnutls28-dev \
         libpcap-dev \
-        libudev-dev \
-        libunwind-dev \
         libx11-dev \
-        libxcomposite-dev \
-        libxi-dev \
-        libxrender-dev \
-        libxext-dev \
-        libxkbcommon-dev \
         libxrandr-dev \
-        make && \
+        make \
+        xz-utils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /build
-
-# Prepare Wine source
-#RUN curl -L https://dl.winehq.org/wine/source/10.x/wine-10.6.tar.xz | tar -xJf - && \
-ADD wine-10.6.tar.xz /build/
-RUN mkdir pkgdir
-
-ARG CFLAGS="-Os -pipe -g"
-ARG CXXFLAGS="-Os -pipe -g"
-ARG LDFLAGS="-Wl,-O1"
-
-# Build Wine
-WORKDIR /build/wine-10.6
-RUN autoreconf && \
+# Extract Wine source, configure and build
+RUN tar -C /build -xf /build/wine-$WINE_VERSION.tar.xz && rm /build/wine-$WINE_VERSION.tar.xz && \
+    cd /build/wine-$WINE_VERSION && \
+    autoreconf && \
     ./configure \
-    --enable-archs=i386,x86_64 \
-    --disable-tests \
-    --disable-win16 \
-    --disable-winedbg \
-    --without-freetype \
-    --prefix=/usr
+        --enable-archs=i386,x86_64 \
+        --disable-tests \
+        --disable-win16 \
+        --disable-winedbg \
+        --without-freetype \
+        --without-gettext \
+        --without-unwind \
+        --prefix=/usr && \
+    make -j$(nproc) && \
+    mkdir /build/pkgdir && \
+    make DESTDIR=/build/pkgdir/ install
 
-CMD ["bash"]
+# Strip unneeded symbols, remove unnecessary files
+RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --strip-unneeded {} \; && \
+    rm -r   /build/pkgdir/usr/share/applications /build/pkgdir/usr/share/man \
+            /build/pkgdir/usr/lib/wine/*-windows/*d3d* \
+            /build/pkgdir/usr/lib/wine/*-windows/*opengl* \
+            /build/pkgdir/usr/lib/wine/*-windows/*audio* \
+            /build/pkgdir/usr/lib/wine/*-windows/*msstyles \
+            /build/pkgdir/usr/lib/wine/*-windows/*mshtml* \
+            /build/pkgdir/usr/lib/wine/*-windows/*msxml* \
+            /build/pkgdir/usr/lib/wine/*-windows/*windowscodecs* \
+            /build/pkgdir/usr/include \
+            /build/wine*
 
-RUN make -j$(nproc)
-
-# Package Wine
-RUN make DESTDIR=/build/pkgdir/ install
-
-# Strip unneeded symbols
-RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --strip-unneeded {} \;
-# Remove unnecessary files
-#RUN rm -r /build/pkgdir/usr/share/wine \
-#           /build/pkgdir/usr/bin/regedit /build/pkgdir/usr/bin/winefile \
-#           /build/pkgdir/usr/lib/wine/*-windows/*d3d* \
-#           /build/pkgdir/usr/lib/wine/*-windows/*gdi* \
-#           /build/pkgdir/usr/lib/wine/*-windows/*opengl* \
-#           /build/pkgdir/usr/lib/wine/*-windows/*audio* \
-#           /build/pkgdir/usr/lib/wine/*-windows/*msstyles \
-#           /build/wine*
-
+# Create image from a clean Debian distribution using build files
 FROM quay.io/lib/debian:trixie-slim
 
-RUN echo 'Acquire::http::Proxy "http://host.docker.internal:3142";' > /etc/apt/apt.conf.d/00aptproxy
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bash \
-    libunwind8 \
-    libxext6 \
     xauth \
     xvfb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy executable binaries
-#COPY --from=localhost/winebuild /build/pkgdir/usr/bin/wine /usr/bin/
-#COPY --from=localhost/winebuild /build/pkgdir/usr/bin/wineserver /usr/bin/
-#COPY --from=localhost/winebuild /usr/bin/Xvfb /usr/bin/
-#COPY --from=localhost/winebuild /usr/bin/xvfb-run /usr/bin/
-
-# Copy DLLs
+# Copy Wine
 COPY --from=builder /build/pkgdir/usr /usr/
-#
-#CMD ["bash"]
-#
+
