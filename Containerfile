@@ -8,14 +8,16 @@ ARG WINE_CHECKSUM="c5ed2742bff208c63b005bcfb91a2fc6cc49af6c6695bc8c0cf0fe6f4da60
 ARG CFLAGS="-Os -pipe -g"
 ARG CXXFLAGS="-Os -pipe -g"
 ARG LDFLAGS="-Wl,-O1"
+# APT flags
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Download Wine source
 ADD --checksum=sha256:$WINE_CHECKSUM \
     https://dl.winehq.org/wine/source/10.x/wine-$WINE_VERSION.tar.xz /build/
 
 # Update system & install build dependencies
-RUN apt-get update && apt-get upgrade --yes && \
-    apt-get install --yes --no-install-recommends --quiet \
+RUN apt-get --quiet=2 update && apt-get --quiet=2 upgrade && \
+    apt-get --quiet=2 install --no-install-recommends \
         bison \
         build-essential \
         ca-certificates \
@@ -65,7 +67,10 @@ RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --
 # Create image from a clean Debian distribution using build files
 FROM docker.io/debian:trixie-slim
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+# APT flags
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get --quiet=2 update && apt-get --quiet=2 --yes upgrade && apt-get --quiet=2 --yes install --no-install-recommends \
     bash \
     xauth \
     xvfb && \
