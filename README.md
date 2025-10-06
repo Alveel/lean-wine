@@ -18,5 +18,5 @@ If you have further optimisations, feel more than welcome to create an issue!
 
 ## Usage
 
-TODO
+See example usage in my [Halo CE Ded Container](https://github.com/Alveel/haloceded-container/blob/main/Containerfile).
 
