@@ -10,7 +10,7 @@ ARG CXXFLAGS="-Os -pipe -g"
 ARG LDFLAGS="-Wl,-O1"
 
 # Download Wine source
-ADD --checksum=sha512:$WINE_CHECKSUM \
+ADD --checksum=sha256:$WINE_CHECKSUM \
     https://dl.winehq.org/wine/source/10.x/wine-$WINE_VERSION.tar.xz /build/
 
 # Update system & install build dependencies
