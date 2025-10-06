@@ -67,6 +67,9 @@ RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --
 # Create image from a clean Debian distribution using build files
 FROM docker.io/debian:trixie-slim
 
+LABEL org.opencontainers.image.description="Lean containerised build of Wine"
+LABEL org.opencontainers.image.source=https://github.com/Alveel/lean-wine
+
 # APT flags
 ARG DEBIAN_FRONTEND=noninteractive
 
