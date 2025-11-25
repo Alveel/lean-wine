@@ -2,8 +2,8 @@
 FROM docker.io/debian:trixie-slim AS builder
 
 # Wine version & SHA256 checksum
-ARG WINE_VERSION="10.16"
-ARG WINE_CHECKSUM="c5ed2742bff208c63b005bcfb91a2fc6cc49af6c6695bc8c0cf0fe6f4da60446"
+ARG WINE_VERSION="10.19"
+ARG WINE_CHECKSUM="7cec58323c6f2aaee7aca93517379cbbfef96e2c2c580c68ff85dd000cbbdd46"
 # Build flags
 ARG CFLAGS="-Os -pipe -g"
 ARG CXXFLAGS="-Os -pipe -g"
