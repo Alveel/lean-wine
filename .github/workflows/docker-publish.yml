@@ -37,8 +37,8 @@ jobs:
       - name: Extract Wine version
         id: wine-version
         run: |
-          WINE_VERSION="$(grep -oP 'ARG WINE_VERSION="\K[^"]+' Containerfile)"
-          echo "version=${WINE_VERSION}" >> $GITHUB_OUTPUT
+          WINE_VERSION=$(grep -oP 'ARG WINE_VERSION="\K[^"]+' Containerfile)
+          echo version=${WINE_VERSION} >> $GITHUB_OUTPUT
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
