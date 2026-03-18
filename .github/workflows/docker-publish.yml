@@ -74,7 +74,7 @@ jobs:
           tags:
             type=ref,event=branch
             type=raw,value=wine-${{ steps.wine-version.outputs.version }}
-            type=raw,value=${{ github.ref_name }}
+            type=raw,value=${{ github.ref }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
