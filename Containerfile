@@ -1,9 +1,9 @@
 # Build stage to build Wine from source
-FROM docker.io/debian:trixie-slim AS builder
+FROM docker.io/debian:13.4-slim AS builder
 
 # Wine version & SHA256 checksum
-ARG WINE_VERSION="10.19"
-ARG WINE_CHECKSUM="7cec58323c6f2aaee7aca93517379cbbfef96e2c2c580c68ff85dd000cbbdd46"
+ARG WINE_VERSION="11.4"
+ARG WINE_CHECKSUM="1970a46381d3bc2c44d651d08336370e499eeb8b53dc93cbd1ce544f7115e598"
 # Build flags
 ARG CFLAGS="-Os -pipe -g"
 ARG CXXFLAGS="-Os -pipe -g"
@@ -13,7 +13,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Download Wine source
 ADD --checksum=sha256:$WINE_CHECKSUM \
-    https://dl.winehq.org/wine/source/10.x/wine-$WINE_VERSION.tar.xz /build/
+    https://dl.winehq.org/wine/source/11.x/wine-$WINE_VERSION.tar.xz /build/
 
 # Update system & install build dependencies
 RUN apt-get --quiet=2 update && apt-get --quiet=2 upgrade && \
