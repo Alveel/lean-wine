@@ -1,9 +1,17 @@
 # Build stage to build Wine from source
-FROM docker.io/debian:13.4-slim AS builder
+FROM docker.io/debian:13.4-slim@sha256:26f98ccd92fd0a44d6928ce8ff8f4921b4d2f535bfa07555ee5d18f61429cf0c AS base
 
 # Wine version & SHA256 checksum
-ARG WINE_VERSION="11.4"
+ARG WINE_VERSION=11.4
+
+LABEL org.opencontainers.image.description="Lean containerised build of Wine"
+LABEL org.opencontainers.image.source=https://github.com/Alveel/lean-wine
+LABEL org.opencontainers.image.version=$WINE_VERSION
+
+FROM base as builder
+
 ARG WINE_CHECKSUM="1970a46381d3bc2c44d651d08336370e499eeb8b53dc93cbd1ce544f7115e598"
+
 # Build flags
 ARG CFLAGS="-Os -pipe -g"
 ARG CXXFLAGS="-Os -pipe -g"
@@ -12,8 +20,8 @@ ARG LDFLAGS="-Wl,-O1"
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Download Wine source
-ADD --checksum=sha256:$WINE_CHECKSUM \
-    https://dl.winehq.org/wine/source/11.x/wine-$WINE_VERSION.tar.xz /build/
+ADD --checksum=sha256:"$WINE_CHECKSUM" \
+    "https://dl.winehq.org/wine/source/11.x/wine-$WINE_VERSION.tar.xz" /build/
 
 # Update system & install build dependencies
 RUN apt-get --quiet=2 update && apt-get --quiet=2 upgrade && \
@@ -65,10 +73,7 @@ RUN find /build/pkgdir/usr/bin /build/pkgdir/usr/lib/wine -type f -exec strip --
             /build/wine*
 
 # Create image from a clean Debian distribution using build files
-FROM docker.io/debian:trixie-slim
-
-LABEL org.opencontainers.image.description="Lean containerised build of Wine"
-LABEL org.opencontainers.image.source=https://github.com/Alveel/lean-wine
+FROM base AS wine
 
 # APT flags
 ARG DEBIAN_FRONTEND=noninteractive
