@@ -71,7 +71,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags:
+          tags: |
             type=ref,event=branch
             type=raw,value=wine-${{ steps.wine-version.outputs.version }}
             type=raw,value=${{ github.ref }}
